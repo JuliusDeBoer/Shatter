@@ -1,2 +1,3 @@
-export * from "./ShatterCanvas";
+export * from "./render";
 export * from "./pixelSort";
+export * from "./image";
