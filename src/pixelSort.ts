@@ -1,12 +1,14 @@
 import { StepSettings } from "./render";
 
+type PixelSortSettings = {
+  mask: (image: { r: number; g: number; b: number }[]) => boolean[];
+};
+
 function getLuminance(r: number, g: number, b: number) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-type PixelSortSettings = {};
-
-export function pixelSort({}: PixelSortSettings) {
+export function pixelSort({ mask }: PixelSortSettings) {
   return ({ image }: StepSettings) => {
     for (let i = 0; i < image.data.length; i += image.width * 4) {
       const slice = image.data.slice(i, i + image.width * 4);
@@ -23,19 +25,11 @@ export function pixelSort({}: PixelSortSettings) {
 
       const slowerSlice: number[] = [];
 
-      const luminanceMap = slowSlice.map((v) => {
-        const luminance = getLuminance(v.r, v.g, v.b);
-
-        if (luminance < 60 || luminance > 170) {
-          return false;
-        }
-
-        return true;
-      });
+      const loadedMask = mask(slowSlice);
 
       let start = -1;
       let toBeSortedSpans: { start: number; end: number }[] = [];
-      luminanceMap.forEach((v, i) => {
+      loadedMask.forEach((v, i) => {
         if (v && start == -1) {
           start = i;
         } else if (!v && start != -1) {
