@@ -4,8 +4,24 @@ type PixelSortSettings = {
   mask: (image: { r: number; g: number; b: number }[]) => boolean[];
 };
 
-function getLuminance(r: number, g: number, b: number) {
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+function getHue(r: number, g: number, b: number) {
+	const min = Math.min(r, g, b);
+	const max = Math.max(r, g, b);
+
+	switch(max) {
+		case r: {
+			return (g-b)/(max-min);
+		}
+		case g: {
+			return 2 + (b-r)/(max-min);
+		}
+		case b: {
+			return 4 + (r-g)/(max-min);
+		}
+	}
+
+	// If you get here. Run!
+	throw Error("Max value was matched");
 }
 
 export function pixelSort({ mask }: PixelSortSettings) {
@@ -37,14 +53,18 @@ export function pixelSort({ mask }: PixelSortSettings) {
           start = -1;
         }
       });
+			if (start != -1) {
+				toBeSortedSpans.push({ start: start, end: loadedMask.length });
+				start = -1;
+			}
 
       toBeSortedSpans.forEach((v) => {
         const sorted = slowSlice.slice(v.start, v.end).sort((a, b) => {
-          const luminanceA = getLuminance(a.r, a.g, a.b);
-          const luminanceB = getLuminance(b.r, b.g, b.b);
+          const hueA = getHue(a.r, a.g, a.b);
+          const hueB = getHue(b.r, b.g, b.b);
 
-          if (luminanceA == luminanceB) return 0;
-          if (luminanceA < luminanceB) return -1;
+          if (hueA == hueB) return 0;
+          if (hueA < hueB) return -1;
           return 1;
         });
         slowSlice.splice(v.start, sorted.length, ...sorted);
