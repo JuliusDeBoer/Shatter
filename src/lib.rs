@@ -1,13 +1,18 @@
+#![feature(fn_traits)]
+
 mod utils;
 
-use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
+use std::sync::Mutex;
+
+use image::{DynamicImage, ImageBuffer, Rgba};
 use utils::set_panic_hook;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, ImageData};
 
 #[wasm_bindgen]
 extern "C" {
-    fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn debug(s: &str);
 
     #[wasm_bindgen(extends = CanvasRenderingContext2d)]
     #[derive(Clone)]
@@ -22,16 +27,38 @@ pub fn start() {
     set_panic_hook();
 }
 
-#[wasm_bindgen]
 pub struct StepAttributes {
-    #[wasm_bindgen(skip)]
-    pub image_buffer: RgbaImage,
+    pub image_buffer: DynamicImage,
 }
 
+#[derive(Default)]
+pub struct StepManager {
+    // TODO: Make this a dictionary so that the indices dont "decay"
+    steps: Vec<Box<dyn FnOnce(&mut StepAttributes) + Send + 'static>>,
+}
+
+impl StepManager {
+    pub fn register(
+        &mut self,
+        step: Box<dyn FnOnce(&mut StepAttributes) + Send + 'static>,
+    ) -> usize {
+        self.steps.push(step);
+        self.steps.len() - 1
+    }
+
+    pub fn run(&mut self, handle: usize, attr: &mut StepAttributes) {
+        let func = self.steps.remove(handle);
+        func.call_once((attr,));
+    }
+}
+
+static STEP_MANAGER: Mutex<StepManager> = Mutex::new(StepManager { steps: Vec::new() });
+
 #[wasm_bindgen(getter_with_clone)]
+#[derive(Default)]
 pub struct RenderSettings {
     context: Option<CanvasRenderingContext2d>,
-    steps: Vec<js_sys::Function>,
+    steps: Vec<usize>,
     dimensions: Option<(u32, u32)>,
 }
 
@@ -39,11 +66,7 @@ pub struct RenderSettings {
 impl RenderSettings {
     #[wasm_bindgen(constructor)]
     pub fn new() -> RenderSettings {
-        RenderSettings {
-            context: None,
-            steps: Vec::new(),
-            dimensions: None,
-        }
+        RenderSettings::default()
     }
 
     #[wasm_bindgen(js_name = withContext)]
@@ -58,46 +81,65 @@ impl RenderSettings {
         self
     }
 
-    pub fn render(&mut self) {
+    pub fn render(self) {
         self.context.clone().expect("Context where not provided");
         self.dimensions.expect("Dimensions where not provided");
 
-        let image_buffer = RgbaImage::new(self.dimensions.unwrap().0, self.dimensions.unwrap().1);
-        let attributes = JsValue::from(StepAttributes {
-            image_buffer,
-        });
+        let mut attributes = StepAttributes {
+            image_buffer: DynamicImage::new(
+                self.dimensions.unwrap().0,
+                self.dimensions.unwrap().1,
+                image::ColorType::Rgba8,
+            ),
+        };
 
+        let mut binding = STEP_MANAGER.lock();
+        let manager = binding.as_mut().unwrap();
 
         for step in &self.steps {
-            step.call0(&attributes).unwrap();
+            manager.run(*step, &mut attributes);
         }
 
+        let image_buffer = attributes.image_buffer;
+        if let DynamicImage::ImageRgba8(output) = image_buffer.clone().into() {
+            let data_again = ImageData::new_with_u8_clamped_array_and_sh(
+                Clamped(&output.into_raw()[..]),
+                image_buffer.width(),
+                image_buffer.height(),
+            )
+            .unwrap();
 
-        // if let DynamicImage::ImageRgba8(output) = attributes.into::<StepAttributes>().unwrap.image_buffer.into() {
-        //     let mut imageData = ImageData::new_with_sw(image_buffer.width(), image_buffer.height()).unwrap();
-        //     imageData.data().clear();
-        //     imageData.data().append(&mut output.into_raw())
-        // } else {
-        //     panic!("Unexpected image format.");
-        // }
+            self.context
+                .as_ref()
+                .unwrap()
+                .put_image_data(&data_again, 0., 0.)
+                .unwrap();
+        } else {
+            panic!("Unexpected image format");
+        }
     }
 
-    pub fn step(mut self, step: js_sys::Function) -> Self {
-        self.steps.push(step);
+    pub fn step(mut self, handle: usize) -> Self {
+        self.steps.push(handle);
         self
     }
 }
 
 #[wasm_bindgen(js_name = loadImage)]
-pub fn load_image(image_data: ImageData) -> js_sys::Function {
-    Closure::once_into_js(move |mut attr: StepAttributes| {
-        let image = ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(
-            image_data.width(),
-            image_data.height(),
-            image_data.data().to_vec(),
-        )
-        .map(DynamicImage::ImageRgba8);
+pub fn load_image(image_data: ImageData) -> usize {
+    let mut binding = STEP_MANAGER.lock();
+    let manager = binding.as_mut().unwrap();
+
+    let width = image_data.width();
+    let height = image_data.height();
+    let data = image_data.data().to_vec();
+
+    debug("Registering the closure");
+
+    manager.register(Box::from(move |attr: &mut StepAttributes| {
+        debug("Running the closure");
+        let image = ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(width, height, data)
+            .map(DynamicImage::ImageRgba8);
         attr.image_buffer = image.expect("Could not parse image").into();
-    })
-    .into()
+    }))
 }
