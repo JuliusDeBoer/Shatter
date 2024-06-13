@@ -1,10 +1,11 @@
 #![feature(fn_traits)]
 
+mod image_loading;
+mod steps;
 mod utils;
 
-use std::sync::Mutex;
-
-use image::{DynamicImage, ImageBuffer, Rgba};
+use image::DynamicImage;
+use steps::{StepAttributes, STEP_MANAGER};
 use utils::set_panic_hook;
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, ImageData};
@@ -26,33 +27,6 @@ extern "C" {
 pub fn start() {
     set_panic_hook();
 }
-
-pub struct StepAttributes {
-    pub image_buffer: DynamicImage,
-}
-
-#[derive(Default)]
-pub struct StepManager {
-    // TODO: Make this a dictionary so that the indices dont "decay"
-    steps: Vec<Box<dyn FnOnce(&mut StepAttributes) + Send + 'static>>,
-}
-
-impl StepManager {
-    pub fn register(
-        &mut self,
-        step: Box<dyn FnOnce(&mut StepAttributes) + Send + 'static>,
-    ) -> usize {
-        self.steps.push(step);
-        self.steps.len() - 1
-    }
-
-    pub fn run(&mut self, handle: usize, attr: &mut StepAttributes) {
-        let func = self.steps.remove(handle);
-        func.call_once((attr,));
-    }
-}
-
-static STEP_MANAGER: Mutex<StepManager> = Mutex::new(StepManager { steps: Vec::new() });
 
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Default)]
@@ -123,23 +97,4 @@ impl RenderSettings {
         self.steps.push(handle);
         self
     }
-}
-
-#[wasm_bindgen(js_name = loadImage)]
-pub fn load_image(image_data: ImageData) -> usize {
-    let mut binding = STEP_MANAGER.lock();
-    let manager = binding.as_mut().unwrap();
-
-    let width = image_data.width();
-    let height = image_data.height();
-    let data = image_data.data().to_vec();
-
-    debug("Registering the closure");
-
-    manager.register(Box::from(move |attr: &mut StepAttributes| {
-        debug("Running the closure");
-        let image = ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(width, height, data)
-            .map(DynamicImage::ImageRgba8);
-        attr.image_buffer = image.expect("Could not parse image");
-    }))
 }
