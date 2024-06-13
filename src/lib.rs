@@ -101,7 +101,7 @@ impl RenderSettings {
         }
 
         let image_buffer = attributes.image_buffer;
-        if let DynamicImage::ImageRgba8(output) = image_buffer.clone().into() {
+        if let DynamicImage::ImageRgba8(output) = image_buffer.clone() {
             let data_again = ImageData::new_with_u8_clamped_array_and_sh(
                 Clamped(&output.into_raw()[..]),
                 image_buffer.width(),
@@ -140,6 +140,6 @@ pub fn load_image(image_data: ImageData) -> usize {
         debug("Running the closure");
         let image = ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(width, height, data)
             .map(DynamicImage::ImageRgba8);
-        attr.image_buffer = image.expect("Could not parse image").into();
+        attr.image_buffer = image.expect("Could not parse image");
     }))
 }
