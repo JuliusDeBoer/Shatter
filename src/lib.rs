@@ -1,5 +1,8 @@
 #![feature(fn_traits)]
 
+#[macro_use]
+extern crate lazy_static;
+
 mod image_loading;
 mod steps;
 mod utils;
@@ -71,7 +74,7 @@ impl RenderSettings {
         let manager = binding.as_mut().unwrap();
 
         for step in &self.steps {
-            manager.run(*step, &mut attributes);
+            manager.run(step, &mut attributes);
         }
 
         let image_buffer = attributes.image_buffer;
