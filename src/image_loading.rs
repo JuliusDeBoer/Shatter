@@ -2,7 +2,7 @@ use image::{DynamicImage, ImageBuffer, Rgba};
 use wasm_bindgen::prelude::*;
 use web_sys::ImageData;
 
-use crate::steps::{StepAttributes, STEP_MANAGER};
+use crate::manager::{StepAttributes, STEP_MANAGER};
 
 #[wasm_bindgen(js_name = loadImage)]
 pub fn load_image(image_data: ImageData) -> usize {

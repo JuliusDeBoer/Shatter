@@ -4,11 +4,12 @@
 extern crate lazy_static;
 
 mod image_loading;
-mod steps;
+mod mask;
+mod manager;
 mod utils;
 
 use image::DynamicImage;
-use steps::{StepAttributes, STEP_MANAGER};
+use manager::{StepAttributes, STEP_MANAGER};
 use utils::set_panic_hook;
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, ImageData};
@@ -78,22 +79,21 @@ impl RenderSettings {
         }
 
         let image_buffer = attributes.image_buffer;
-        if let DynamicImage::ImageRgba8(output) = image_buffer.clone() {
-            let data_again = ImageData::new_with_u8_clamped_array_and_sh(
-                Clamped(&output.into_raw()[..]),
-                image_buffer.width(),
-                image_buffer.height(),
-            )
-            .unwrap();
 
-            self.context
-                .as_ref()
-                .unwrap()
-                .put_image_data(&data_again, 0., 0.)
-                .unwrap();
-        } else {
-            panic!("Unexpected image format");
-        }
+        let output = image_buffer.clone().into_rgba8();
+
+        let data_again = ImageData::new_with_u8_clamped_array_and_sh(
+            Clamped(&output.into_raw()[..]),
+            image_buffer.width(),
+            image_buffer.height(),
+        )
+        .unwrap();
+
+        self.context
+            .as_ref()
+            .unwrap()
+            .put_image_data(&data_again, 0., 0.)
+            .unwrap();
     }
 
     pub fn step(mut self, handle: usize) -> Self {
