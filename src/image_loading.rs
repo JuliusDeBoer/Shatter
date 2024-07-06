@@ -4,6 +4,10 @@ use web_sys::ImageData;
 
 use crate::manager::{StepAttributes, STEP_MANAGER};
 
+/// A step tht takes in image data and passes it on to the next step.
+///
+/// This step discards the previous step. And should therefore probably be the
+/// first step.
 #[wasm_bindgen(js_name = loadImage)]
 pub fn load_image(image_data: ImageData) -> usize {
     let mut binding = STEP_MANAGER.lock();

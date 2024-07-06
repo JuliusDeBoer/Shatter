@@ -1,11 +1,13 @@
+//! A wasm library for manipulating images. Mainly sorting pixels
+
 #![feature(fn_traits)]
 
 #[macro_use]
 extern crate lazy_static;
 
-mod image_loading;
-mod mask;
-mod manager;
+pub mod image_loading;
+pub mod manager;
+pub mod mask;
 mod utils;
 
 use image::DynamicImage;
@@ -45,23 +47,31 @@ pub struct RenderSettings {
 
 #[wasm_bindgen]
 impl RenderSettings {
+    /// You can guess this one.
     #[wasm_bindgen(constructor)]
     pub fn new() -> RenderSettings {
         RenderSettings::default()
     }
 
+    /// Sets the canvas context to render to.
     #[wasm_bindgen(js_name = withContext)]
     pub fn with_context(mut self, context: CanvasRenderingContext2d) -> Self {
         self.context = Some(context);
         self
     }
 
+    /// Sets the dimensions of the rendered image.
     #[wasm_bindgen(js_name = withDimensions)]
     pub fn with_dimensions(mut self, x: u32, y: u32) -> Self {
         self.dimensions = Some((x, y));
         self
     }
 
+    /// Renders the image on the canvas.
+    ///
+    /// This will fail if the context or the dimensions where not set using
+    /// [with_context][Self::with_context] and
+    /// [with_dimensions][Self::with_dimensions].
     pub fn render(self) {
         self.context.clone().expect("Context where not provided");
         self.dimensions.expect("Dimensions where not provided");
@@ -99,6 +109,7 @@ impl RenderSettings {
             .unwrap();
     }
 
+    /// Adds a processing step to the end of the queue
     pub fn step(mut self, handle: usize) -> Self {
         self.steps.push(handle);
         self

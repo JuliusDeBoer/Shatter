@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::manager::{StepAttributes, MASK_MANAGER, STEP_MANAGER};
 
+/// A simple step to display the result of a mask. Mosty for debugging
 #[wasm_bindgen(js_name = showMask)]
 pub fn show_mask(mask: usize) -> usize {
     let mut binding = STEP_MANAGER.lock();
@@ -16,6 +17,7 @@ pub fn show_mask(mask: usize) -> usize {
     }))
 }
 
+/// Creates a contrast mask
 #[wasm_bindgen(js_name = contrastMask)]
 pub fn contrast_mask(lower_bounds: f32, higher_bounds: f32) -> usize {
     let mut binding = MASK_MANAGER.lock();
