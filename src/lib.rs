@@ -10,9 +10,11 @@ mod utils;
 
 use image::DynamicImage;
 use manager::{StepAttributes, STEP_MANAGER};
-use utils::set_panic_hook;
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, ImageData};
+
+#[cfg(debug_assertions)]
+use utils::set_panic_hook;
 
 #[wasm_bindgen]
 extern "C" {
@@ -27,6 +29,7 @@ extern "C" {
     pub fn fillRect(this: &CanvasRenderingContext2D, x: u16, y: u16, width: u16, height: u16);
 }
 
+#[cfg(debug_assertions)]
 #[wasm_bindgen(start)]
 pub fn start() {
     set_panic_hook();
