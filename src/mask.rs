@@ -13,7 +13,7 @@ pub fn show_mask(mask: usize) -> usize {
         let mut binding = MASK_MANAGER.lock();
         let mask_manager = binding.as_mut().unwrap();
 
-        attr.image_buffer = mask_manager.run(&mask, attr);
+        attr.image_buffer = mask_manager.run(&mask, attr).unwrap();
     }))
 }
 

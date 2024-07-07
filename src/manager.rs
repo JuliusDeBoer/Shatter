@@ -31,7 +31,7 @@ impl<A, R> Manager<A, R> {
     }
 
     /// Register a new function into the manager.
-    /// 
+    ///
     /// Returns a handle that can then be fed into the [run][Self::run]
     /// function.
     pub fn register(&mut self, step: Box<dyn FnOnce(&mut A) -> R + Send + 'static>) -> usize {
@@ -41,9 +41,11 @@ impl<A, R> Manager<A, R> {
     }
 
     /// Runs the registered function.
-    pub fn run(&mut self, handle: &usize, attr: &mut A) -> R {
-        let func = self.hash_map.remove(handle).expect("Could not get closure");
-        func.call_once((attr,))
+    pub fn run(&mut self, handle: &usize, attr: &mut A) -> Result<R, String> {
+        match self.hash_map.remove(handle) {
+            Some(func) => Ok(func.call_once((attr,))),
+            None => Err(format!("Could not find function with handle {}", handle)),
+        }
     }
 }
 

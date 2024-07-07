@@ -72,9 +72,14 @@ impl RenderSettings {
     /// This will fail if the context or the dimensions where not set using
     /// [with_context][Self::with_context] and
     /// [with_dimensions][Self::with_dimensions].
-    pub fn render(self) {
-        self.context.clone().expect("Context where not provided");
-        self.dimensions.expect("Dimensions where not provided");
+    pub fn render(self) -> Result<(), String> {
+        if self.context.is_none() {
+            return Err("Context was not provided".to_string());
+        }
+
+        if self.dimensions.is_none() {
+            return Err("Dimensions where not provided".to_string());
+        }
 
         let mut attributes = StepAttributes {
             image_buffer: DynamicImage::new(
@@ -85,28 +90,37 @@ impl RenderSettings {
         };
 
         let mut binding = STEP_MANAGER.lock();
-        let manager = binding.as_mut().unwrap();
+        let manager = match binding.as_mut() {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(format!("Could not get lock: {}", e));
+            }
+        };
 
         for step in &self.steps {
-            manager.run(step, &mut attributes);
+            manager.run(step, &mut attributes)?;
         }
 
         let image_buffer = attributes.image_buffer;
 
         let output = image_buffer.clone().into_rgba8();
 
-        let data_again = ImageData::new_with_u8_clamped_array_and_sh(
+        let data_again = match ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&output.into_raw()[..]),
             image_buffer.width(),
             image_buffer.height(),
-        )
-        .unwrap();
+        ) {
+            Ok(v) => v,
+            Err(_) => return Err("Could not create image data".to_string()),
+        };
 
         self.context
             .as_ref()
             .unwrap()
             .put_image_data(&data_again, 0., 0.)
             .unwrap();
+
+        Ok(())
     }
 
     /// Adds a processing step to the end of the queue
