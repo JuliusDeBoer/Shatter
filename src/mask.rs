@@ -27,7 +27,6 @@ pub fn contrast_mask(lower_bounds: f32, higher_bounds: f32) -> usize {
         let width = attr.image_buffer.width();
         let height = attr.image_buffer.height();
 
-        // The to_luma32f function is slow. Maybe write your own implementation
         let mut luma = attr.image_buffer.to_luma32f();
         let pixels = luma.iter_mut().map(|p| {
             if *p >= lower_bounds && *p <= higher_bounds {
