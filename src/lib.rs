@@ -111,7 +111,12 @@ impl RenderSettings {
             image_buffer.height(),
         ) {
             Ok(v) => v,
-            Err(_) => return Err("Could not create image data".to_string()),
+            Err(e) => {
+                return Err(format!(
+                    "Could not create image data: {}",
+                    e.as_string().unwrap_or("Reason unknown".to_string())
+                ))
+            }
         };
 
         self.context
