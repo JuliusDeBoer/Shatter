@@ -1,6 +1,7 @@
 //! A wasm library for manipulating images. Mainly sorting pixels
 
 #![feature(fn_traits)]
+#![feature(slice_as_chunks)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -8,6 +9,7 @@ extern crate lazy_static;
 pub mod image_loading;
 pub mod manager;
 pub mod mask;
+pub mod sort;
 mod utils;
 
 use image::DynamicImage;
