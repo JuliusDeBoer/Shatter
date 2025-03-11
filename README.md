@@ -1,7 +1,16 @@
 # Shatter
 
-A javascript library for sorting pixels inside an image.
+A WASM library for image processing.
 
-## License
+## Get started
 
-See [LICENSE.md](LICENSE.md).
+Nah...
+
+## Building
+
+To compile this project please use
+[wasm-pack](https://rustwasm.github.io/wasm-pack/installer/).
+
+```sh
+wasm-pack build
+```
