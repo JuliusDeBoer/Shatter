@@ -49,7 +49,7 @@ pub fn pixel_sort(mask: usize) -> usize {
             mask_chunks[i].clone().iter().for_each(|p| {
                 if *p > 128 && current != width - 1 {
                     // Pixel light
-                    if let None = begin {
+                    if begin.is_none() {
                         begin = Some(current);
                     }
                 } else {
@@ -70,10 +70,8 @@ pub fn pixel_sort(mask: usize) -> usize {
                 height as u32,
                 image_chunks
                     .concat()
-                    .iter()
-                    .map(|a| *a)
-                    .flatten()
-                    .map(|a| *a)
+                    .iter().copied()
+                    .flatten().copied()
                     .collect(),
             )
             .unwrap(),
