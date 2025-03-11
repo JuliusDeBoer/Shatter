@@ -22,10 +22,11 @@ pub fn pixel_sort(mask: usize) -> usize {
         let width = attr.image_buffer.width() as usize;
         let height = attr.image_buffer.height() as usize;
 
-        let buffer_binding = attr.image_buffer.clone();
+        let buffer_binding = attr.image_buffer.clone().into_rgb8();
         let mut image_chunks = buffer_binding
-            .into_rgb8()
-            .chunks(width * 3)
+            .chunks(3)
+            .collect::<Vec<&[u8]>>()
+            .chunks(width)
             .map(Vec::from)
             .collect::<Vec<_>>();
 
@@ -40,28 +41,42 @@ pub fn pixel_sort(mask: usize) -> usize {
             .map(Vec::from)
             .collect::<Vec<_>>();
 
+        assert_eq!(image_chunks.len(), mask_chunks.len());
+
         for i in 0..height {
             let mut begin = Option::<usize>::None;
             let mut current = 0usize;
             mask_chunks[i].clone().iter().for_each(|p| {
-                if *p < 128 {
-                    match begin {
-                        Some(b) => {
-                            let slice = image_chunks[i][b..current].as_mut();
-                            slice.sort();
-                            begin = None;
-                        }
-                        None => {
-                            begin = Some(current);
-                        }
+                if *p > 128 && current != width - 1 {
+                    // Pixel light
+                    if let None = begin {
+                        begin = Some(current);
+                    }
+                } else {
+                    // Pixel dark
+                    if let Some(b) = begin {
+                        let slice = image_chunks[i][b..current].as_mut();
+                        slice.sort_by(|a, b| a[0].cmp(&b[0]));
+                        begin = None;
                     }
                 }
-                current += 3;
+                current += 1;
             })
         }
 
         attr.image_buffer = DynamicImage::from(
-            RgbImage::from_vec(width as u32, height as u32, image_chunks.concat()).unwrap(),
+            RgbImage::from_vec(
+                width as u32,
+                height as u32,
+                image_chunks
+                    .concat()
+                    .iter()
+                    .map(|a| *a)
+                    .flatten()
+                    .map(|a| *a)
+                    .collect(),
+            )
+            .unwrap(),
         );
     }))
 }
