@@ -41,7 +41,11 @@ pub fn pixel_sort(mask: usize) -> usize {
             .map(Vec::from)
             .collect::<Vec<_>>();
 
-        assert_eq!(image_chunks.len(), mask_chunks.len());
+        assert_eq!(
+            image_chunks.len(),
+            mask_chunks.len(),
+            "Image and mask are not the same size"
+        );
 
         for i in 0..height {
             let mut begin = Option::<usize>::None;
@@ -70,8 +74,10 @@ pub fn pixel_sort(mask: usize) -> usize {
                 height as u32,
                 image_chunks
                     .concat()
-                    .iter().copied()
-                    .flatten().copied()
+                    .iter()
+                    .copied()
+                    .flatten()
+                    .copied()
                     .collect(),
             )
             .unwrap(),

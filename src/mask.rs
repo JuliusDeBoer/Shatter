@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 use image::GrayImage;
 use wasm_bindgen::prelude::*;
 
@@ -43,6 +45,79 @@ pub fn contrast_mask(lower_bounds: f32, higher_bounds: f32) -> usize {
         image::DynamicImage::ImageLuma8(
             GrayImage::from_vec(width, height, pixels.collect())
                 .expect("Could not convert back into image. Array might not be long enough"),
+        )
+    }))
+}
+
+// Hue = 60 * ((G - B) / (max - min)) + 360 (if max is R),
+// Hue = 60 * ((B - R) / (max - min)) + 120 (if max is G),
+// Hue = 60 * ((R - G) / (max - min)) + 240 (if max is B).
+fn rgb_to_hue(r: f32, g: f32, b: f32) -> f32 {
+    let max = if (r > g && r > b) {
+        r
+    } else if (g > b) {
+        g
+    } else {
+        b
+    };
+    let min = if (r < g && r < b) {
+        r
+    } else if (g < b) {
+        g
+    } else {
+        b
+    };
+
+    let mut out = 0.0;
+    if max == r {
+        out = (60. * ((g - b) / (max - min)) + 360.).into();
+    }
+    if max == g {
+        out = (60. * ((b - r) / (max - min)) + 120.).into();
+    }
+    if max == b {
+        out = (60. * ((r - g) / (max - min)) + 240.).into();
+    }
+
+    if out <= 0. {
+        return out + 360.;
+    }
+
+    out
+}
+
+#[wasm_bindgen(js_name = hueMask)]
+pub fn hue_mask(lower_bounds: f32, higher_bounds: f32) -> usize {
+    let mut binding = MASK_MANAGER.lock();
+    let manager = binding.as_mut().expect("Could to get mask manager lock");
+
+    let real_lower_bounds = lower_bounds * 360.0;
+    let real_higher_bounds = higher_bounds * 360.0;
+
+    manager.register(Box::from(move |attr: &mut StepAttributes| {
+        let width = attr.image_buffer.width();
+        let height = attr.image_buffer.height();
+
+        let image = attr.image_buffer.to_rgb8();
+        let mut hue = image
+            .chunks(3)
+            .map(|p| rgb_to_hue(p[0] as f32 / 255., p[1] as f32 / 255., p[2] as f32 / 255.));
+
+        // assert!(!hue.any(|p| p < 0.), "One or more pixels are less then 0");
+        // assert!(
+        //     !hue.any(|p| p > 360.),
+        //     "One or more pixels are more than 360"
+        // );
+
+        let pixels = hue.map(
+            |p| match p >= real_lower_bounds && p <= real_higher_bounds {
+                true => 255u8,
+                false => 0u8,
+            },
+        );
+        image::DynamicImage::ImageLuma8(
+            GrayImage::from_vec(width, height, pixels.collect())
+                .expect("Could not convert back into image"),
         )
     }))
 }
