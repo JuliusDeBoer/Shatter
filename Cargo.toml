@@ -1,6 +1,6 @@
 [package]
 name = "shatter"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Julius de Boer <45075461+JuliusDeBoer@users.noreply.github.com>"]
 edition = "2018"
 description = "An WASM image manipulation library written in Rust"
