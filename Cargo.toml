@@ -3,6 +3,9 @@ name = "shatter"
 version = "0.1.0"
 authors = ["Julius de Boer <45075461+JuliusDeBoer@users.noreply.github.com>"]
 edition = "2018"
+description = "An WASM image manipulation library written in Rust"
+license = "BSD-2-Clause"
+repository = "https://github.com/JuliusDeBoer/Shatter"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -19,10 +22,7 @@ lazy_static = "1.4.0"
 
 [dependencies.web-sys]
 version = "0.3.69"
-features = [
-	"CanvasRenderingContext2d",
-	"ImageData"
-]
+features = ["CanvasRenderingContext2d", "ImageData"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
