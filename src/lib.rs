@@ -1,7 +1,6 @@
 //! A wasm library for manipulating images. Mainly sorting pixels
 
 #![feature(fn_traits)]
-#![feature(slice_as_chunks)]
 
 #[macro_use]
 extern crate lazy_static;

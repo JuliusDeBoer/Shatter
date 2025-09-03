@@ -1,4 +1,3 @@
-use std::cmp::{max, min};
 
 use image::GrayImage;
 use wasm_bindgen::prelude::*;
@@ -53,16 +52,16 @@ pub fn contrast_mask(lower_bounds: f32, higher_bounds: f32) -> usize {
 // Hue = 60 * ((B - R) / (max - min)) + 120 (if max is G),
 // Hue = 60 * ((R - G) / (max - min)) + 240 (if max is B).
 fn rgb_to_hue(r: f32, g: f32, b: f32) -> f32 {
-    let max = if (r > g && r > b) {
+    let max = if r > g && r > b {
         r
-    } else if (g > b) {
+    } else if g > b {
         g
     } else {
         b
     };
-    let min = if (r < g && r < b) {
+    let min = if r < g && r < b {
         r
-    } else if (g < b) {
+    } else if g < b {
         g
     } else {
         b
@@ -70,13 +69,13 @@ fn rgb_to_hue(r: f32, g: f32, b: f32) -> f32 {
 
     let mut out = 0.0;
     if max == r {
-        out = (60. * ((g - b) / (max - min)) + 360.).into();
+        out = 60. * ((g - b) / (max - min)) + 360.;
     }
     if max == g {
-        out = (60. * ((b - r) / (max - min)) + 120.).into();
+        out = 60. * ((b - r) / (max - min)) + 120.;
     }
     if max == b {
-        out = (60. * ((r - g) / (max - min)) + 240.).into();
+        out = 60. * ((r - g) / (max - min)) + 240.;
     }
 
     if out <= 0. {
@@ -99,7 +98,7 @@ pub fn hue_mask(lower_bounds: f32, higher_bounds: f32) -> usize {
         let height = attr.image_buffer.height();
 
         let image = attr.image_buffer.to_rgb8();
-        let mut hue = image
+        let hue = image
             .chunks(3)
             .map(|p| rgb_to_hue(p[0] as f32 / 255., p[1] as f32 / 255., p[2] as f32 / 255.));
 
